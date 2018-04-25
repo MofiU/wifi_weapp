@@ -181,28 +181,6 @@
     }
 
     methods = {
-      // connectWifi () {
-      //   this._login()
-      //   wepy.startWifi().then((res) => {
-      //     console.log('startWifi', res)
-      //     wepy.getWifiList().then((res) => {
-      //       console.log('getWifiList', res)
-      //       wepy.onGetWifiList((res) => {
-      //         console.log('onGetWifiList', res)
-      //       })
-      //     }, (error) => {
-      //       console.error('getWifiList error', error)
-      //     })
-
-      //     wepy.onWifiConnected((res) => {
-      //       console.log('onWifiConnected', res)
-      //       this.getConnectedWifi()
-      //     })
-      //   }, (error) => {
-      //     console.log('startWifi error', error)
-      //   })
-      // }
-
       connectWifi () {
         wepy.scanCode().then((res) => {
           console.log('scan success', res)
@@ -228,6 +206,7 @@
     }
 
     onLoad () {
+      this._getWifiList()
       this._getConnectedWifi()
       this._login()
       this._getSystemInfo()
@@ -323,26 +302,45 @@
 
     _connectWifi (config) {
       wepy.startWifi().then((res) => {
-        console.log('startWifi', res)
+        console.log('startWifi in connectWifi', res)
         wepy.connectWifi({
           SSID: config.SSID,
           BSSID: config.BSSID,
           password: config.password
         }).then((res) => {
-          console.log('connectWifi', res)
+          console.log('connectWifi success', res)
+          const macAddress = this._getMacAddress()
+          console.log('get mac address response', macAddress)
         }, (error) => {
           console.log('connectWifi error', error)
         })
       }, (error) => {
-        console.log('startWifi error', error)
+        console.log('startWifi in connectWifi error', error)
       })
     }
 
-    _getMacAddres () {
-      wepy.request({ url: 'http://10.3.141.1/'}).then((res) => {
+    _getMacAddress () {
+      console.log('call _getMacAddress')
+      wepy.request({ url: 'http://10.3.141.1/' }).then((res) => {
         console.log('request mac address success', res)
       }, (error) => {
         console.error('request mac address error', error)
+      })
+    }
+
+    _getWifiList () {
+      wepy.startWifi().then((res) => {
+        console.log('startWifi', res)
+        wepy.getWifiList().then((res) => {
+          console.log('getWifiList', res)
+          wepy.onGetWifiList((res) => {
+            console.log('onGetWifiList', res)
+          })
+        }, (error) => {
+          console.error('getWifiList error', error)
+        })
+      }, (error) => {
+        console.log('startWifi error', error)
       })
     }
   }
