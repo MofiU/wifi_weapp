@@ -48,7 +48,7 @@
   </view>
 
   <view class="weui-btn-area">
-    <button class="weui-btn" type="primary" @tap='connectWifi'>自动连Wifi</button>
+    <button class="weui-btn" type="primary" @tap='connectWifi'>扫码连wifi</button>
   </view>
 
   <view class="weui-cells__title">当前用户信息</view>
@@ -168,7 +168,6 @@
 
 <script>
   import wepy from 'wepy'
-  import { appid, secret } from '../../config'
 
   export default class Index extends wepy.page {
     data = {
@@ -182,25 +181,41 @@
     }
 
     methods = {
-      connectWifi () {
-        this._login()
-        wepy.startWifi().then((res) => {
-          console.log('startWifi', res)
-          wepy.getWifiList().then((res) => {
-            console.log('getWifiList', res)
-            wepy.onGetWifiList((res) => {
-              console.log('onGetWifiList', res)
-            })
-          }, (error) => {
-            console.error('getWifiList error', error)
-          })
+      // connectWifi () {
+      //   this._login()
+      //   wepy.startWifi().then((res) => {
+      //     console.log('startWifi', res)
+      //     wepy.getWifiList().then((res) => {
+      //       console.log('getWifiList', res)
+      //       wepy.onGetWifiList((res) => {
+      //         console.log('onGetWifiList', res)
+      //       })
+      //     }, (error) => {
+      //       console.error('getWifiList error', error)
+      //     })
 
-          wepy.onWifiConnected((res) => {
-            console.log('onWifiConnected', res)
-            this.getConnectedWifi()
-          })
+      //     wepy.onWifiConnected((res) => {
+      //       console.log('onWifiConnected', res)
+      //       this.getConnectedWifi()
+      //     })
+      //   }, (error) => {
+      //     console.log('startWifi error', error)
+      //   })
+      // }
+
+      connectWifi () {
+        wepy.scanCode().then((res) => {
+          console.log('scan success', res)
+          const wifiConfig = JSON.parse(res.result)
+          console.log('wifiConfig', wifiConfig)
+          this._connectWifi(wifiConfig)
         }, (error) => {
-          console.log('startWifi error', error)
+          console.error('scan code error', error)
+          wepy.showModal({
+            title: '扫码错误提示',
+            content: error.errMsg,
+            showCancel: false
+          })
         })
       }
     }
@@ -288,14 +303,46 @@
     }
 
     _getOpenid(code) {
+      let openid = wepy.getStorageSync('openid')
+      if (openid) {
+        this.openid = openid
+        this.$apply()
+        return
+      }
       wepy.request({
-        url: 'https://api.weixin.qq.com/sns/jscode2session?appid=' + appid + '&secret=' + secret + '&js_code=' + code + '&grant_type=authorization_code'
+        url: 'https://api.weixin.qq.com/sns/jscode2session?appid=wx20c5aff8be9d0607&secret=e9e071f0adf7ac73bd923392d5265753&js_code=' + code + '&grant_type=authorization_code'
       }).then((res) => {
         console.log('getOpenid', res)
         this.openid = res.data.openid
         this.$apply()
+        wepy.setStorageSync('openid', this.openid)
       }, (error) => {
         console.error('getOpenid error', error)
+      })
+    }
+
+    _connectWifi (config) {
+      wepy.startWifi().then((res) => {
+        console.log('startWifi', res)
+        wepy.connectWifi({
+          SSID: config.SSID,
+          BSSID: config.BSSID,
+          password: config.password
+        }).then((res) => {
+          console.log('connectWifi', res)
+        }, (error) => {
+          console.log('connectWifi error', error)
+        })
+      }, (error) => {
+        console.log('startWifi error', error)
+      })
+    }
+
+    _getMacAddres () {
+      wepy.request({ url: 'http://10.3.141.1/'}).then((res) => {
+        console.log('request mac address success', res)
+      }, (error) => {
+        console.error('request mac address error', error)
       })
     }
   }
