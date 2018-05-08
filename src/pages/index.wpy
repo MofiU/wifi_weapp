@@ -177,7 +177,8 @@
       signalStrength: null,
       userInfo: {},
       systemInfo: {},
-      openid: null
+      openid: null,
+      remoteUrl: ''
     }
 
     methods = {
@@ -185,6 +186,8 @@
         wepy.scanCode().then((res) => {
           console.log('scan success', res)
           const wifiConfig = JSON.parse(res.result)
+          this.remoteUrl = wifiConfig.remoteUrl
+          this.$apply()
           console.log('wifiConfig', wifiConfig)
           this._connectWifi(wifiConfig)
         }, (error) => {
@@ -206,7 +209,7 @@
     }
 
     onLoad () {
-      this._getWifiList()
+      // this._getWifiList()
       this._getConnectedWifi()
       this._login()
       this._getSystemInfo()
@@ -309,8 +312,9 @@
           password: config.password
         }).then((res) => {
           console.log('connectWifi success', res)
-          const macAddress = this._getMacAddress()
+          const macAddress = setTimeout(() => { this._getMacAddress() }, 2000)
           console.log('get mac address response', macAddress)
+          this._getConnectedWifi()
         }, (error) => {
           console.log('connectWifi error', error)
         })
@@ -321,10 +325,23 @@
 
     _getMacAddress () {
       console.log('call _getMacAddress')
-      wepy.request({ url: 'http://10.3.141.1/' }).then((res) => {
+
+      wepy.request({ url: this.remoteUrl }).then((res) => {
         console.log('request mac address success', res)
+        console.log(' remote url', this.remoteUrl)
+        wepy.showModal({
+          title: '访问' + this.remoteUrl + '成功',
+          content: res.data,
+          showCancel: false
+        })
       }, (error) => {
         console.error('request mac address error', error)
+        console.log('remote url', this.remoteUrl)
+        wepy.showModal({
+          title: '访问' + this.remoteUrl + '失败',
+          content: error.errMsg,
+          showCancel: false
+        })
       })
     }
 
