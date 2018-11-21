@@ -1,0 +1,325 @@
+<style type="scss">
+  .avatar {
+    width: 80px;
+    height: 80px;
+    margin: 20px;
+    border-radius: 50%;
+  }
+</style>
+
+<template>
+  <view class="weui-btn-area">
+    <button class="weui-btn" type="primary" @tap='connectWifi'>扫码连wifi</button>
+  </view>
+
+  <view class="weui-cells__title">当前用户信息</view>
+  <view class="weui-cells weui-cells_after-title">
+    <view class="weui-cell weui-cell_input">
+      <view class="weui-cell__hd">
+        <view class="weui-label">用户头像</view>
+      </view>
+      <view class="weui-cell__bd">
+        <image class="avatar" src="{{userInfo.avatarUrl}}"></image>
+      </view>
+    </view>
+
+    <view class="weui-cell weui-cell_input">
+      <view class="weui-cell__hd">
+        <view class="weui-label">用户名</view>
+      </view>
+      <view class="weui-cell__bd">
+        <input class="weui-input" disabled="true" placeholder="nickName" value="{{userInfo.nickName}}" />
+      </view>
+    </view>
+
+    <view class="weui-cell weui-cell_input">
+      <view class="weui-cell__hd">
+        <view class="weui-label">openid</view>
+      </view>
+      <view class="weui-cell__bd">
+        <input class="weui-input" disabled="true" placeholder="openid" value="{{openid}}" />
+      </view>
+    </view>
+
+    <view class="weui-cell weui-cell_input">
+      <view class="weui-cell__hd">
+        <view class="weui-label">性别</view>
+      </view>
+      <view class="weui-cell__bd">
+        <input class="weui-input" disabled="true" placeholder="gender" value="{{gender}}" />
+      </view>
+    </view>
+
+    <view class="weui-cell weui-cell_input">
+      <view class="weui-cell__hd">
+        <view class="weui-label">所在省份</view>
+      </view>
+      <view class="weui-cell__bd">
+        <input class="weui-input" disabled="true" placeholder="province" value="{{userInfo.province}}" />
+      </view>
+    </view>
+
+    <view class="weui-cell weui-cell_input">
+      <view class="weui-cell__hd">
+        <view class="weui-label">所在城市</view>
+      </view>
+      <view class="weui-cell__bd">
+        <input class="weui-input" disabled="true" placeholder="city" value="{{userInfo.city}}" />
+      </view>
+    </view>
+
+    <view class="weui-cell weui-cell_input">
+      <view class="weui-cell__hd">
+        <view class="weui-label">所在国家</view>
+      </view>
+      <view class="weui-cell__bd">
+        <input class="weui-input" disabled="true" placeholder="country" value="{{userInfo.country}}" />
+      </view>
+    </view>
+  </view>
+
+  <view class="weui-cells__title">当前系统信息</view>
+  <view class="weui-cells weui-cells_after-title">
+    <view class="weui-cell weui-cell_input">
+      <view class="weui-cell__hd">
+        <view class="weui-label">型号</view>
+      </view>
+      <view class="weui-cell__bd">
+        <input class="weui-input" disabled="true" placeholder="model" value="{{systemInfo.model}}" />
+      </view>
+    </view>
+
+    <view class="weui-cell weui-cell_input">
+      <view class="weui-cell__hd">
+        <view class="weui-label">语言</view>
+      </view>
+      <view class="weui-cell__bd">
+        <input class="weui-input" disabled="true" placeholder="language" value="{{systemInfo.language}}" />
+      </view>
+    </view>
+
+    <view class="weui-cell weui-cell_input">
+      <view class="weui-cell__hd">
+        <view class="weui-label">版本</view>
+      </view>
+      <view class="weui-cell__bd">
+        <input class="weui-input" disabled="true" placeholder="version" value="{{systemInfo.version}}" />
+      </view>
+    </view>
+
+    <view class="weui-cell weui-cell_input">
+      <view class="weui-cell__hd">
+        <view class="weui-label">平台</view>
+      </view>
+      <view class="weui-cell__bd">
+        <input class="weui-input" disabled="true" placeholder="platform" value="{{systemInfo.platform}}" />
+      </view>
+    </view>
+
+    <view class="weui-cell weui-cell_input">
+      <view class="weui-cell__hd">
+        <view class="weui-label">系统</view>
+      </view>
+      <view class="weui-cell__bd">
+        <input class="weui-input" disabled="true" placeholder="system" value="{{systemInfo.system}}" />
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+
+  export default class Index extends wepy.page {
+    data = {
+      ssid: '',
+      bssid: '',
+      secure: null,
+      signalStrength: null,
+      userInfo: {},
+      systemInfo: {},
+      openid: null,
+      remoteUrl: ''
+    }
+
+    methods = {
+      connectWifi () {
+        wepy.scanCode().then((res) => {
+          console.log('scan success', res)
+          const wifiConfig = JSON.parse(res.result)
+          this.remoteUrl = wifiConfig.remoteUrl
+          this.$apply()
+          console.log('wifiConfig', wifiConfig)
+          this._connectWifi(wifiConfig)
+        }, (error) => {
+          console.error('scan code error', error)
+          wepy.showModal({
+            title: '扫码错误提示',
+            content: error.errMsg,
+            showCancel: false
+          })
+        })
+      }
+    }
+
+    computed = {
+      gender () {
+        const genderDist = { 0: '未知', 1: '男', 2: '女' }
+        return genderDist[this.userInfo.gender]
+      }
+    }
+
+    onLoad () {
+      // this._getWifiList()
+      this._getConnectedWifi()
+      this._login()
+      this._getSystemInfo()
+    }
+
+    _getConnectedWifi () {
+      wepy.startWifi().then((res) => {
+        console.log('startWifi', res)
+        wepy.getConnectedWifi().then((res) => {
+          console.log('getConnectedWifi', res)
+          this.ssid = res.wifi.SSID
+          this.bssid = res.wifi.BSSID
+          this.secure = res.wifi.secure
+          this.signalStrength = res.wifi.signalStrength
+          this.$apply()
+        }, (error) => {
+          console.error('getConnectedWifi error', error)
+        })
+      }, (error) => {
+        console.log('startWifi error', error)
+      })
+    }
+
+    _login () {
+      wepy.login().then((res) => {
+        this._getOpenid(res.code)
+        console.log('login', res)
+        wepy.getUserInfo().then((res) => {
+          this.userInfo = res.userInfo
+          this.$apply()
+        }, (error) => {
+          console.log('user reject userinfo', error)
+          wepy.showModal({
+            title: '请求用户信息授权',
+            content: '正常使用此应用需要您的用户信息授权，点击确认进行授权操作'
+          }).then((res) => {
+            if (res.confirm) {
+              wepy.openSetting().then((res) => {
+                console.log('openSetting')
+                if (res) {
+                  if (res.authSetting['scope.userInfo']) {
+                    console.log('用户授权成功')
+                    wepy.getUserInfo().then((res) => {
+                      wepy.setStorageSync('userInfo', res.userInfo)
+                      this.userInfo = res.userInfo
+                      this.$apply()
+                    })
+                  } else {
+                    console.log('木有授权用户信息')
+                  }
+                }
+              }, (error) => {
+                console.log('设置失败返回', error)
+              })
+            }
+          }, (error) => {
+            console.error('show modal error', error)
+          })
+        })
+      }, (error) => {
+        console.error('login failed', error)
+      })
+    }
+
+    _getSystemInfo () {
+      wepy.getSystemInfo().then((res) => {
+        console.log('getSystemInfo', res)
+        this.systemInfo = res
+        this.$apply()
+      }, (error) => {
+        console.error('getSystemInfo error', error)
+      })
+    }
+
+    _getOpenid(code) {
+      let openid = wepy.getStorageSync('openid')
+      if (openid) {
+        this.openid = openid
+        this.$apply()
+        return
+      }
+      wepy.request({
+        url: 'https://api.weixin.qq.com/sns/jscode2session?appid=wx20c5aff8be9d0607&secret=e9e071f0adf7ac73bd923392d5265753&js_code=' + code + '&grant_type=authorization_code'
+      }).then((res) => {
+        console.log('getOpenid', res)
+        this.openid = res.data.openid
+        this.$apply()
+        wepy.setStorageSync('openid', this.openid)
+      }, (error) => {
+        console.error('getOpenid error', error)
+      })
+    }
+
+    _connectWifi (config) {
+      wepy.startWifi().then((res) => {
+        console.log('startWifi in connectWifi', res)
+        wepy.connectWifi({
+          SSID: config.SSID,
+          BSSID: config.BSSID,
+          password: config.password
+        }).then((res) => {
+          console.log('connectWifi success', res)
+          const macAddress = setTimeout(() => { this._getMacAddress() }, 2000)
+          console.log('get mac address response', macAddress)
+          this._getConnectedWifi()
+        }, (error) => {
+          console.log('connectWifi error', error)
+        })
+      }, (error) => {
+        console.log('startWifi in connectWifi error', error)
+      })
+    }
+
+    _getMacAddress () {
+      console.log('call _getMacAddress')
+
+      wepy.request({ url: this.remoteUrl }).then((res) => {
+        console.log('request mac address success', res)
+        console.log(' remote url', this.remoteUrl)
+        wepy.showModal({
+          title: '访问' + this.remoteUrl + '成功',
+          content: res.data,
+          showCancel: false
+        })
+      }, (error) => {
+        console.error('request mac address error', error)
+        console.log('remote url', this.remoteUrl)
+        wepy.showModal({
+          title: '访问' + this.remoteUrl + '失败',
+          content: error.errMsg,
+          showCancel: false
+        })
+      })
+    }
+
+    _getWifiList () {
+      wepy.startWifi().then((res) => {
+        console.log('startWifi', res)
+        wepy.getWifiList().then((res) => {
+          console.log('getWifiList', res)
+          wepy.onGetWifiList((res) => {
+            console.log('onGetWifiList', res)
+          })
+        }, (error) => {
+          console.error('getWifiList error', error)
+        })
+      }, (error) => {
+        console.log('startWifi error', error)
+      })
+    }
+  }
+</script>
