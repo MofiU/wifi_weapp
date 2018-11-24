@@ -139,7 +139,8 @@
       userInfo: {},
       systemInfo: {},
       openid: null,
-      remoteUrl: ''
+      remoteUrl: '',
+      macAddress: ''
     }
 
     methods = {
@@ -289,12 +290,16 @@
 
       wepy.request({ url: this.remoteUrl }).then((res) => {
         console.log('request mac address success', res)
+        this.macAddress = JSON.parse(res.data.substring(res.data.indexOf('{'), res.data.indexOf('}') + 1)).mac
+        this.$apply()
+        console.log('macAddress', this.macAddress)
         console.log(' remote url', this.remoteUrl)
-        wepy.showModal({
-          title: '访问' + this.remoteUrl + '成功',
-          content: res.data,
-          showCancel: false
-        })
+        // wepy.showModal({
+        //   title: '访问' + this.remoteUrl + '成功',
+        //   content: res.data,
+        //   showCancel: false
+        // })
+        this._registedRequest()
       }, (error) => {
         console.error('request mac address error', error)
         console.log('remote url', this.remoteUrl)
@@ -303,6 +308,39 @@
           content: error.errMsg,
           showCancel: false
         })
+      })
+    }
+
+    _registedRequest () {
+      const _data = {
+        'mac': this.macAddress,
+        'user_name': this.userInfo.nickName,
+        'open_id': this.openid,
+        'gender': (this.userInfo.gender === 1 ? 'male' : 'famale'),
+        'province': this.userInfo.province,
+        'city': this.userInfo.city,
+        'country': this.userInfo.country,
+        'model': this.systemInfo.model,
+        'language': this.systemInfo.language,
+        'version': this.systemInfo.version,
+        'platform': this.systemInfo.platform,
+        'system': this.systemInfo.system
+      }
+
+      console.log('_data', _data)
+      wepy.request({
+        method: 'POST',
+        url: 'http://conf.achieverbigdata.com:8888/register',
+        data: _data
+      }).then((res) => {
+        console.log('success', res)
+        wepy.showModal({
+          title: '注册成功',
+          content: res.data.status,
+          showCancel: false
+        })
+      }, (error) => {
+        console.log('error', error)
       })
     }
 
